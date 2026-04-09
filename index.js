@@ -27,13 +27,14 @@ const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const LOG_CHANNEL_ID = "1486176116413825206";
 
+// Imagen Thumbnail Corregida
 const URL_THUMBNAIL_PERSONALIZADO = "https://i.imgur.com/b7XMeUs.png";
 
 const estadosFilas = new Map();
 
 // ===================== EMOJIS PERSONALIZADOS DEFINITIVOS =====================
-const EMOJI_CARTAS_MESA = "<:cartas:1491745897896345751>";
-const EMOJI_DINERO_ANIMADO = "<a:dinero:1491745907472076881>";
+const EMOJI_CARTAS_MESA = "<:white_cartas_worclay:1491745807794438195>";
+const EMOJI_DINERO_ANIMADO = "<a:money_sign:1491745833190690847>";
 const EMOJI_CARTAS = "🃏";
 const EMOJI_FUEGO = "🔥";
 const EMOJI_MATE = "🧉";
@@ -41,7 +42,7 @@ const EMOJI_MATE = "🧉";
 // ===================== EMBED REGLAS Y PAGOS =====================
 function embedPagos() {
   return new EmbedBuilder()
-    .setColor(0x006400)
+    .setColor(0x006400) // Verde tapete
     .setTitle(`${EMOJI_CARTAS} REGLAS DEL TRUCO & PAGOS`)
     .setDescription(
 `━━━━━━━━━━━━━━━━━━
@@ -73,7 +74,7 @@ function embedPagos() {
     });
 }
 
-// ===================== EMBED FILA =====================
+// ===================== EMBED FILA (ESTILO TRUCO) =====================
 function crearEmbedFila(data = { f1: null, f2: null, f3: null }) {
   const p1 = data.f1 ? `<@${data.f1}>` : "*Esperando retador...*";
   const p2 = data.f2 ? `<@${data.f2}>` : "*Esperando retador...*";
@@ -129,13 +130,14 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
+  // CERRAR MESA
   if (interaction.customId === "cerrar_partida") {
     if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
       return interaction.reply({ content: "❌ Solo el staff puede cerrar la mesa.", ephemeral: true });
     }
     
     const canalDestino = interaction.channel;
-    await interaction.reply({ content: "⏳ Cerrando mesa y generando registro...", ephemeral: true });
+    await interaction.reply({ content: "⏳ Cerrando mesa y guardando registro...", ephemeral: true });
     
     try {
       const attachment = await discordTranscripts.createTranscript(canalDestino, {
@@ -173,7 +175,7 @@ client.on("interactionCreate", async (interaction) => {
   if (!filaKey) return;
 
   if (data.f1 === userId || data.f2 === userId || data.f3 === userId) {
-    if (data[filaKey] !== userId) return interaction.reply({ content: "⚠️ Ya estás en una mesa.", ephemeral: true });
+    if (data[filaKey] !== userId) return interaction.reply({ content: "⚠️ Ya estás sentado en una mesa.", ephemeral: true });
   }
 
   if (!data[filaKey]) {
@@ -220,6 +222,7 @@ async function crearCanalPrivado(interaction, jugadores) {
     embeds: [embedMatch], 
     components: [
         new ActionRowBuilder().addComponents(
+            // Botón en Rojo (Danger)
             new ButtonBuilder().setCustomId("cerrar_partida").setLabel("LEVANTAR MESA").setEmoji("🤝").setStyle(ButtonStyle.Danger)
         )
     ]
