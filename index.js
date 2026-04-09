@@ -31,9 +31,9 @@ const URL_THUMBNAIL_PERSONALIZADO = "https://i.imgur.com/b7XMeUs.png";
 
 const estadosFilas = new Map();
 
-// ===================== EMOJIS PERSONALIZADOS CORREGIDOS =====================
-const EMOJI_CARTAS_MESA = "<:carta:1491745039959851143>";
-const EMOJI_DINERO_ANIMADO = "<a:dinero:1491745067122032730>";
+// ===================== EMOJIS PERSONALIZADOS DEFINITIVOS =====================
+const EMOJI_CARTAS_MESA = "<:cartas:1491745897896345751>";
+const EMOJI_DINERO_ANIMADO = "<a:dinero:1491745907472076881>";
 const EMOJI_CARTAS = "🃏";
 const EMOJI_FUEGO = "🔥";
 const EMOJI_MATE = "🧉";
