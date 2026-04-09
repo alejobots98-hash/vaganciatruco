@@ -27,14 +27,13 @@ const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const LOG_CHANNEL_ID = "1486176116413825206";
 
-// URL corregida para que se vea el Thumbnail
 const URL_THUMBNAIL_PERSONALIZADO = "https://i.imgur.com/b7XMeUs.png";
 
 const estadosFilas = new Map();
 
-// ===================== EMOJIS PERSONALIZADOS =====================
-const EMOJI_CARTAS_MESA = "<:white_cartas_worclay:1345431342367768642>";
-const EMOJI_DINERO_ANIMADO = "<a:73_money:1480121015534227507>";
+// ===================== EMOJIS PERSONALIZADOS CORREGIDOS =====================
+const EMOJI_CARTAS_MESA = "<:carta:1491745039959851143>";
+const EMOJI_DINERO_ANIMADO = "<a:dinero:1491745067122032730>";
 const EMOJI_CARTAS = "🃏";
 const EMOJI_FUEGO = "🔥";
 const EMOJI_MATE = "🧉";
@@ -74,7 +73,7 @@ function embedPagos() {
     });
 }
 
-// ===================== EMBED FILA (ACTUALIZADO) =====================
+// ===================== EMBED FILA =====================
 function crearEmbedFila(data = { f1: null, f2: null, f3: null }) {
   const p1 = data.f1 ? `<@${data.f1}>` : "*Esperando retador...*";
   const p2 = data.f2 ? `<@${data.f2}>` : "*Esperando retador...*";
@@ -221,7 +220,6 @@ async function crearCanalPrivado(interaction, jugadores) {
     embeds: [embedMatch], 
     components: [
         new ActionRowBuilder().addComponents(
-            // Botón FINALIZAR cambiado a color Rojo (Danger)
             new ButtonBuilder().setCustomId("cerrar_partida").setLabel("LEVANTAR MESA").setEmoji("🤝").setStyle(ButtonStyle.Danger)
         )
     ]
