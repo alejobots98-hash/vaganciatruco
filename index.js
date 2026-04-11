@@ -27,12 +27,12 @@ const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const LOG_CHANNEL_ID = "1486176116413825206";
 
-// Imagen Thumbnail Corregida
+// Imagen Thumbnail
 const URL_THUMBNAIL_PERSONALIZADO = "https://i.imgur.com/b7XMeUs.png";
 
 const estadosFilas = new Map();
 
-// ===================== EMOJIS PERSONALIZADOS DEFINITIVOS =====================
+// ===================== EMOJIS =====================
 const EMOJI_CARTAS_MESA = "<:white_cartas_worclay:1491745807794438195>";
 const EMOJI_DINERO_ANIMADO = "<a:money_sign:1491745833190690847>";
 const EMOJI_CARTAS = "🃏";
@@ -42,7 +42,7 @@ const EMOJI_MATE = "🧉";
 // ===================== EMBED REGLAS Y PAGOS =====================
 function embedPagos() {
   return new EmbedBuilder()
-    .setColor(0x006400) // Verde tapete
+    .setColor(0x006400)
     .setTitle(`${EMOJI_CARTAS} REGLAS DEL TRUCO & PAGOS`)
     .setDescription(
 `━━━━━━━━━━━━━━━━━━
@@ -61,7 +61,14 @@ function embedPagos() {
 ━━━━━━━━━━━━━━━━━━
 **📝 REGLAMENTO DE APUESTAS**
 
-💰 **Comisión:** $400 ARS en apuestas de $3.000 en adelante.
+🌐 **Única página válida para jugar:**
+┗ https://trucogame.com/game
+
+📸 **Validación de victoria:**
+┗ El ganador debe enviar captura de la victoria obligatoriamente.
+
+💰 **Comisión:**
+┗ $400 ARS en apuestas de $3.000 en adelante.
 
 ━━━━━━━━━━━━━━━━━━
 **VAGANCIA SYSTEM**
@@ -74,7 +81,7 @@ function embedPagos() {
     });
 }
 
-// ===================== EMBED FILA (ESTILO TRUCO) =====================
+// ===================== EMBED FILA =====================
 function crearEmbedFila(data = { f1: null, f2: null, f3: null }) {
   const p1 = data.f1 ? `<@${data.f1}>` : "*Esperando retador...*";
   const p2 = data.f2 ? `<@${data.f2}>` : "*Esperando retador...*";
@@ -141,8 +148,12 @@ client.on("interactionCreate", async (interaction) => {
     
     try {
       const attachment = await discordTranscripts.createTranscript(canalDestino, {
-        limit: -1, fileName: `mesa-${canalDestino.name}.html`, saveImages: true, poweredBy: false,
+        limit: -1,
+        fileName: `mesa-${canalDestino.name}.html`,
+        saveImages: true,
+        poweredBy: false,
       });
+
       const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
       if (logChannel) {
         await logChannel.send({
@@ -175,23 +186,27 @@ client.on("interactionCreate", async (interaction) => {
   if (!filaKey) return;
 
   if (data.f1 === userId || data.f2 === userId || data.f3 === userId) {
-    if (data[filaKey] !== userId) return interaction.reply({ content: "⚠️ Ya estás sentado en una mesa.", ephemeral: true });
+    if (data[filaKey] !== userId) {
+      return interaction.reply({ content: "⚠️ Ya estás sentado en una mesa.", ephemeral: true });
+    }
   }
 
   if (!data[filaKey]) {
     data[filaKey] = userId;
     await interaction.update({ embeds: [crearEmbedFila(data)] });
   } else {
-    if (data[filaKey] === userId) return interaction.reply({ content: "⚠️ Ya estás aquí.", ephemeral: true });
+    if (data[filaKey] === userId) {
+      return interaction.reply({ content: "⚠️ Ya estás aquí.", ephemeral: true });
+    }
     
     const rivalId = data[filaKey];
-    data[filaKey] = null; 
+    data[filaKey] = null;
     await interaction.update({ embeds: [crearEmbedFila(data)] });
     await crearCanalPrivado(interaction, [rivalId, userId]);
   }
 });
 
-// ===================== FUNCIÓN CANAL PRIVADO =====================
+// ===================== CANAL PRIVADO =====================
 async function crearCanalPrivado(interaction, jugadores) {
   const guild = interaction.guild;
   const parent = interaction.channel.parent;
@@ -199,7 +214,9 @@ async function crearCanalPrivado(interaction, jugadores) {
   const nombres = jugadores
     .map((id) => guild.members.cache.get(id)?.user.username || "jugador")
     .join("-vs-")
-    .toLowerCase().replace(/[^a-z0-9\-]/g, "").slice(0, 80);
+    .toLowerCase()
+    .replace(/[^a-z0-9\-]/g, "")
+    .slice(0, 80);
 
   const canal = await guild.channels.create({
     name: `🃏┃${nombres}`,
@@ -207,29 +224,57 @@ async function crearCanalPrivado(interaction, jugadores) {
     parent,
     permissionOverwrites: [
       { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-      { id: STAFF_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-      ...jugadores.map(id => ({ id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] })),
+      {
+        id: STAFF_ROLE_ID,
+        allow: [
+          PermissionsBitField.Flags.ViewChannel,
+          PermissionsBitField.Flags.SendMessages,
+          PermissionsBitField.Flags.ReadMessageHistory,
+        ],
+      },
+      ...jugadores.map(id => ({
+        id,
+        allow: [
+          PermissionsBitField.Flags.ViewChannel,
+          PermissionsBitField.Flags.SendMessages,
+          PermissionsBitField.Flags.ReadMessageHistory,
+        ],
+      })),
     ],
   });
 
   const embedMatch = new EmbedBuilder()
     .setColor(0x2f3136)
     .setTitle(`${EMOJI_FUEGO} ¡DUELO DE TRUCO INICIADO!`)
-    .setDescription(`🎴 **LOS DESAFIANTES**\n\n<@${jugadores[0]}> **v.s** <@${jugadores[1]}>\n\n━━━━━━━━━━━━━━━━━━\n🔹 ¡Buena suerte a ambos!\n━━━━━━━━━━━━━━━━━━`);
+    .setDescription(
+`🎴 **LOS DESAFIANTES**
 
-  await canal.send({ 
-    content: `${jugadores.map(id => `<@${id}>`).join(" ")} | <@&${STAFF_ROLE_ID}>`, 
-    embeds: [embedMatch], 
+<@${jugadores[0]}> **v.s** <@${jugadores[1]}>
+
+━━━━━━━━━━━━━━━━━━
+🔹 ¡Buena suerte a ambos!
+━━━━━━━━━━━━━━━━━━`
+    );
+
+  await canal.send({
+    content: `${jugadores.map(id => `<@${id}>`).join(" ")} | <@&${STAFF_ROLE_ID}>`,
+    embeds: [embedMatch],
     components: [
-        new ActionRowBuilder().addComponents(
-            // Botón en Rojo (Danger)
-            new ButtonBuilder().setCustomId("cerrar_partida").setLabel("LEVANTAR MESA").setEmoji("🤝").setStyle(ButtonStyle.Danger)
-        )
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId("cerrar_partida")
+          .setLabel("LEVANTAR MESA")
+          .setEmoji("🤝")
+          .setStyle(ButtonStyle.Danger)
+      )
     ]
   });
 
   await canal.send({ embeds: [embedPagos()] });
 }
 
-client.once("ready", () => console.log(`🃏 Bot conectado: ${client.user.tag}`));
+client.once("ready", () => {
+  console.log(`🃏 Bot conectado: ${client.user.tag}`);
+});
+
 client.login(process.env.TOKEN);
