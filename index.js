@@ -25,7 +25,7 @@ const PREFIX = "!truco";
 const CANAL_FILA_ID = "1491738368927596574"; 
 const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
-const EXTRA_MOD_ROLE_ID = "1211760228673257524"; // Nuevo rol permitido para cerrar
+const EXTRA_MOD_ROLE_ID = "1211760228673257524"; 
 const LOG_CHANNEL_ID = "1486176116413825206";
 
 // Imagen Thumbnail
@@ -49,9 +49,9 @@ function embedPagos() {
 `━━━━━━━━━━━━━━━━━━
 **💰 MÉTODOS DE COBRO**
 
-🏦 **Banco Ripio**
+🏦 **Naranja X**
 ┗ 👤 Alejo German Tolosa  
-┗ 🔗 Alias: \`vg.ripio\`
+┗ 🔗 Alias: \`vg.apos\`
 
 🌐 **AstroPay**
 ┗ 🔗 https://onetouch.astropay.com/payment?external_reference_id=8lIV0oqyplqnZulPqVirFZbTf2rkhLsR
@@ -238,7 +238,7 @@ async function crearCanalPrivado(interaction, jugadores) {
         ],
       },
       {
-        id: EXTRA_MOD_ROLE_ID, // El nuevo rol también ve el canal privado
+        id: EXTRA_MOD_ROLE_ID,
         allow: [
           PermissionsBitField.Flags.ViewChannel,
           PermissionsBitField.Flags.SendMessages,
