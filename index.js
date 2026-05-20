@@ -49,9 +49,9 @@ function embedPagos() {
 `━━━━━━━━━━━━━━━━━━
 **💰 MÉTODOS DE COBRO**
 
-🏦 **Naranja X**
-┗ 👤 Alejo German Tolosa  
-┗ 🔗 Alias: \`vg.apos\`
+🏦 **Mercado Pago**
+┗ 👤 Amanda Ines Rojas  
+┗ 🔗 Alias: \`029.amanda.docena.mp\`
 
 🌐 **AstroPay**
 ┗ 🔗 https://onetouch.astropay.com/payment?external_reference_id=8lIV0oqyplqnZulPqVirFZbTf2rkhLsR
