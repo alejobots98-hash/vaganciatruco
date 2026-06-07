@@ -49,9 +49,9 @@ function embedPagos() {
 `━━━━━━━━━━━━━━━━━━
 **💰 MÉTODOS DE COBRO**
 
-🏦 **Mercado Pago**
-┗ 👤 Amanda Ines Rojas  
-┗ 🔗 Alias: \`vg.mp8\`
+🏦 **Personal Pay**
+┗ 👤 Alejo German Tolosa 
+┗ 🔗 Alias: \`vg.apos\`
 
 🌐 **AstroPay**
 ┗ 🔗 https://onetouch.astropay.com/payment?external_reference_id=8lIV0oqyplqnZulPqVirFZbTf2rkhLsR
