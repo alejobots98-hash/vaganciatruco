@@ -51,7 +51,7 @@ function embedPagos() {
 
 🏦 **Personal Pay**
 ┗ 👤 Alejo German Tolosa 
-┗ 🔗 Alias: \`vg.apos\`
+┗ 🔗 Alias: \`vg.cuentas\`
 
 🌐 **AstroPay**
 ┗ 🔗 https://onetouch.astropay.com/payment?external_reference_id=8lIV0oqyplqnZulPqVirFZbTf2rkhLsR
