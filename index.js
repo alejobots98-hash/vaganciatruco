@@ -1,4 +1,5 @@
 
+
 require("dotenv").config();
 
 const {
@@ -122,30 +123,16 @@ function puedeCrearFila(member) {
   );
 }
 
-// ===================== EMBED PAGOS =====================
+// ===================== EMBED REGLAS =====================
 
 function embedPagos() {
   return new EmbedBuilder()
     .setColor(0x006400)
-    .setTitle(`${EMOJI_CARTAS} REGLAS DEL TRUCO & PAGOS`)
+    .setTitle(`${EMOJI_CARTAS} REGLAS DEL TRUCO`)
     .setDescription(
       `━━━━━━━━━━━━━━━━━━
 
-**💰 MÉTODOS DE COBRO**
-
-🏦 **Personal Pay**
-┗ 👤 Alejo German Tolosa
-┗ 🔗 Alias: \`vg.cuentas\`
-
-🌐 **AstroPay**
-┗ 🔗 https://onetouch.astropay.com/payment?external_reference_id=8lIV0oqyplqnZulPqVirFZbTf2rkhLsR
-
-💎 **Binance**
-┗ 🆔 ID: \`729592524\`
-
-━━━━━━━━━━━━━━━━━━
-
-**📝 REGLAMENTO DE APUESTAS**
+📝 **REGLAMENTO DE APUESTAS**
 
 🌐 **Única página válida para jugar:**
 ┗ https://trucogame.com/game
@@ -303,7 +290,7 @@ async function avisarIntermediarios(
   });
 }
 
-// ===================== DATOS DEL INTERMEDIARIO =====================
+// ===================== DATOS PAGO INTERMEDIARIO =====================
 
 function crearDatosPago(intermediario) {
   return `🏦 **Método:** ${intermediario.banco}
@@ -316,12 +303,12 @@ ${
 }`;
 }
 
-// ===================== COMANDO CREAR FILA =====================
+// ===================== CREAR FILA =====================
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  if (message.content !== PREFIX) return;
+  if (message.content.trim() !== PREFIX) return;
 
   if (message.channel.id !== CANAL_FILA_ID) return;
 
@@ -346,36 +333,82 @@ client.on("messageCreate", async (message) => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  if (message.content !== CLOSE_COMMAND) return;
+  if (message.content.trim() !== CLOSE_COMMAND) return;
 
   if (message.channel.id !== CANAL_FILA_ID) return;
 
   if (!puedeCrearFila(message.member)) {
-    return message.reply("❌ No tienes permiso para cerrar las filas.");
+    return message.reply({
+      content: "❌ No tienes permiso para cerrar las filas.",
+    });
   }
 
-  let cerradas = 0;
+  const canalFila = message.channel;
 
-  const mensajesFila = [...estadosFilas.keys()];
+  try {
+    // ===================== TRANSCRIPCIÓN =====================
 
-  for (const mensajeId of mensajesFila) {
-    try {
-      const mensaje = await message.channel.messages.fetch(mensajeId);
+    const attachment =
+      await discordTranscripts.createTranscript(canalFila, {
+        limit: -1,
+        fileName: `fila-truco-${Date.now()}.html`,
+        saveImages: true,
+        poweredBy: false,
+      });
 
-      if (mensaje) {
-        await mensaje.delete().catch(() => {});
-      }
+    const logChannel =
+      message.guild.channels.cache.get(LOG_CHANNEL_ID);
 
-      estadosFilas.delete(mensajeId);
-      cerradas++;
-    } catch (error) {
-      estadosFilas.delete(mensajeId);
+    if (logChannel) {
+      await logChannel.send({
+        content:
+          `📝 **FILA DE TRUCO CERRADA**\n` +
+          `Canal: \`${canalFila.name}\`\n` +
+          `Cerrada por: <@${message.author.id}>\n` +
+          `📅 Registro guardado correctamente.`,
+
+        files: [attachment],
+      });
     }
-  }
 
-  return message.reply({
-    content: `✅ Se cerraron **${cerradas}** fila(s) activas.`,
-  });
+    // ===================== CERRAR FILAS =====================
+
+    let cerradas = 0;
+
+    const mensajesFila = [...estadosFilas.keys()];
+
+    for (const mensajeId of mensajesFila) {
+      try {
+        const mensaje =
+          await canalFila.messages.fetch(mensajeId);
+
+        if (mensaje) {
+          await mensaje.delete().catch(() => {});
+        }
+
+        estadosFilas.delete(mensajeId);
+        cerradas++;
+
+      } catch (error) {
+        estadosFilas.delete(mensajeId);
+      }
+    }
+
+    return message.reply({
+      content:
+        `✅ **Fila cerrada correctamente.**\n\n` +
+        `🗑️ Filas eliminadas: **${cerradas}**\n` +
+        `📄 Transcripción HTML guardada en logs.`,
+    });
+
+  } catch (error) {
+    console.error("Error al cerrar la fila:", error);
+
+    return message.reply({
+      content:
+        "❌ Ocurrió un error al cerrar la fila y guardar el HTML.",
+    });
+  }
 });
 
 // ===================== INTERACCIONES =====================
@@ -412,7 +445,8 @@ client.on("interactionCreate", async (interaction) => {
 
     if (fila.intermediarioId) {
       return interaction.reply({
-        content: "⚠️ Esta fila ya fue tomada por otro intermediario.",
+        content:
+          "⚠️ Esta fila ya fue tomada por otro intermediario.",
         ephemeral: true,
       });
     }
@@ -473,7 +507,7 @@ ${datosPago}
     return;
   }
 
-  // ===================== CERRAR MESA =====================
+  // ===================== CERRAR PARTIDA =====================
 
   if (interaction.customId === "cerrar_partida") {
     const tienePermiso = tienePermisoStaff(interaction.member);
@@ -517,7 +551,6 @@ Cerrada por: <@${interaction.user.id}>`,
       console.error("Error al guardar transcripción:", e);
     }
 
-    // Limpiar fila de intermediarios
     filasIntermediarios.delete(canalDestino.id);
 
     setTimeout(async () => {
@@ -546,7 +579,7 @@ Cerrada por: <@${interaction.user.id}>`,
 
   const userId = interaction.user.id;
 
-  // ===================== SALIR DE FILA =====================
+  // ===================== SALIR FILA =====================
 
   if (interaction.customId === "salir_fila") {
     if (data.f1 === userId) data.f1 = null;
@@ -709,7 +742,7 @@ async function crearCanalPrivado(interaction, jugadores) {
     embeds: [embedPagos()],
   });
 
-  // Aviso automático al canal de intermediarios
+  // Aviso automático a intermediarios
   await avisarIntermediarios(interaction, jugadores, canal);
 }
 
