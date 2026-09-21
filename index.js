@@ -1,5 +1,4 @@
 
-
 require("dotenv").config();
 
 const {
@@ -34,7 +33,6 @@ const CANAL_INTERMEDIARIOS_ID = "1506448806697238682";
 const CREAR_FILA_ROLE_ID = "1486959938038136912";
 const STAFF_ROLE_ID = "1476541425263968391";
 const EXTRA_MOD_ROLE_ID = "1211760228673257524";
-
 const LOG_CHANNEL_ID = "1486176116413825206";
 
 const URL_THUMBNAIL_PERSONALIZADO =
@@ -104,6 +102,15 @@ const METODOS_INTERMEDIARIOS = {
 
 // ===================== PERMISOS =====================
 
+function puedeCrearFila(member) {
+  return (
+    member.permissions.has(
+      PermissionsBitField.Flags.Administrator
+    ) ||
+    member.roles.cache.has(CREAR_FILA_ROLE_ID)
+  );
+}
+
 function tienePermisoStaff(member) {
   return (
     member.permissions.has(
@@ -111,15 +118,6 @@ function tienePermisoStaff(member) {
     ) ||
     member.roles.cache.has(STAFF_ROLE_ID) ||
     member.roles.cache.has(EXTRA_MOD_ROLE_ID)
-  );
-}
-
-function puedeCrearFila(member) {
-  return (
-    member.permissions.has(
-      PermissionsBitField.Flags.Administrator
-    ) ||
-    member.roles.cache.has(CREAR_FILA_ROLE_ID)
   );
 }
 
@@ -253,44 +251,54 @@ function crearAvisoIntermediario(jugadores) {
 
 // ===================== AVISAR INTERMEDIARIOS =====================
 
-async function avisarIntermediarios(
-  interaction,
-  jugadores,
-  canal
-) {
-  const canalIntermediarios =
-    interaction.guild.channels.cache.get(
-      CANAL_INTERMEDIARIOS_ID
+async function avisarIntermediarios(interaction, jugadores, canal) {
+  try {
+    const canalIntermediarios =
+      await interaction.guild.channels.fetch(
+        CANAL_INTERMEDIARIOS_ID
+      );
+
+    if (!canalIntermediarios) {
+      console.error("❌ Canal de intermediarios no encontrado.");
+      return;
+    }
+
+    if (!canalIntermediarios.isTextBased()) {
+      console.error("❌ El canal no es de texto.");
+      return;
+    }
+
+    const mensaje = await canalIntermediarios.send({
+      content: "🔔 **NUEVA PARTIDA DISPONIBLE**",
+      embeds: [crearAvisoIntermediario(jugadores)],
+      components: [
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`tomar_fila_${canal.id}`)
+            .setLabel("TOMAR FILA")
+            .setEmoji("🤝")
+            .setStyle(ButtonStyle.Success)
+        ),
+      ],
+    });
+
+    filasIntermediarios.set(canal.id, {
+      jugadores,
+      canalId: canal.id,
+      mensajeId: mensaje.id,
+      intermediarioId: null,
+    });
+
+    console.log(
+      `✅ Aviso de intermediario enviado: ${canal.id}`
     );
 
-  if (!canalIntermediarios) {
-    console.log("❌ Canal de intermediarios no encontrado.");
-    return;
+  } catch (error) {
+    console.error("❌ ERROR AL ENVIAR AVISO:", error);
   }
-
-  const mensaje = await canalIntermediarios.send({
-    embeds: [crearAvisoIntermediario(jugadores)],
-
-    components: [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`tomar_fila_${canal.id}`)
-          .setLabel("TOMAR FILA")
-          .setEmoji("🤝")
-          .setStyle(ButtonStyle.Success)
-      ),
-    ],
-  });
-
-  filasIntermediarios.set(canal.id, {
-    jugadores,
-    canalId: canal.id,
-    mensajeId: mensaje.id,
-    intermediarioId: null,
-  });
 }
 
-// ===================== DATOS PAGO INTERMEDIARIO =====================
+// ===================== DATOS DE PAGO =====================
 
 function crearDatosPago(intermediario) {
   return `🏦 **Método:** ${intermediario.banco}
@@ -308,106 +316,138 @@ ${
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  if (message.content.trim() !== PREFIX) return;
+  const comando = message.content.trim();
 
-  if (message.channel.id !== CANAL_FILA_ID) return;
+  // ===================== !TRUCO =====================
 
-  if (!puedeCrearFila(message.member)) {
-    return message.reply("❌ No tienes permiso.");
-  }
+  if (comando === PREFIX) {
+    if (message.channel.id !== CANAL_FILA_ID) return;
 
-  const msg = await message.channel.send({
-    embeds: [crearEmbedFila()],
-    components: [botonesTripleFila()],
-  });
+    if (!puedeCrearFila(message.member)) {
+      return message.reply("❌ No tienes permiso.");
+    }
 
-  estadosFilas.set(msg.id, {
-    f1: null,
-    f2: null,
-    f3: null,
-  });
-});
-
-// ===================== COMANDO CLOSE =====================
-
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-
-  if (message.content.trim() !== CLOSE_COMMAND) return;
-
-  if (message.channel.id !== CANAL_FILA_ID) return;
-
-  if (!puedeCrearFila(message.member)) {
-    return message.reply({
-      content: "❌ No tienes permiso para cerrar las filas.",
-    });
-  }
-
-  const canalFila = message.channel;
-
-  try {
-    // ===================== TRANSCRIPCIÓN =====================
-
-    const attachment =
-      await discordTranscripts.createTranscript(canalFila, {
-        limit: -1,
-        fileName: `fila-truco-${Date.now()}.html`,
-        saveImages: true,
-        poweredBy: false,
+    try {
+      const msg = await message.channel.send({
+        embeds: [crearEmbedFila()],
+        components: [botonesTripleFila()],
       });
 
-    const logChannel =
-      message.guild.channels.cache.get(LOG_CHANNEL_ID);
+      estadosFilas.set(msg.id, {
+        f1: null,
+        f2: null,
+        f3: null,
+      });
 
-    if (logChannel) {
+      console.log(`✅ Fila creada: ${msg.id}`);
+
+    } catch (error) {
+      console.error("❌ Error al crear fila:", error);
+    }
+
+    return;
+  }
+
+  // ===================== !CLOSE =====================
+
+  if (comando === CLOSE_COMMAND) {
+    if (message.channel.id !== CANAL_FILA_ID) return;
+
+    if (!puedeCrearFila(message.member)) {
+      return message.reply({
+        content: "❌ No tienes permiso para cerrar las filas.",
+      });
+    }
+
+    const canalFila = message.channel;
+
+    try {
+      // Guardar HTML antes de borrar los mensajes
+      const attachment =
+        await discordTranscripts.createTranscript(canalFila, {
+          limit: -1,
+          fileName: `fila-truco-${Date.now()}.html`,
+          saveImages: true,
+          poweredBy: false,
+        });
+
+      const logChannel =
+        await message.guild.channels.fetch(LOG_CHANNEL_ID);
+
+      if (!logChannel || !logChannel.isTextBased()) {
+        throw new Error("Canal de logs no encontrado o no es de texto.");
+      }
+
       await logChannel.send({
         content:
           `📝 **FILA DE TRUCO CERRADA**\n` +
           `Canal: \`${canalFila.name}\`\n` +
-          `Cerrada por: <@${message.author.id}>\n` +
-          `📅 Registro guardado correctamente.`,
+          `Cerrada por: <@${message.author.id}>`,
 
         files: [attachment],
       });
-    }
 
-    // ===================== CERRAR FILAS =====================
+      // Eliminar avisos de intermediarios de las filas activas
+      const avisos = [...filasIntermediarios.values()];
 
-    let cerradas = 0;
+      for (const fila of avisos) {
+        try {
+          const canalIntermediarios =
+            await message.guild.channels.fetch(
+              CANAL_INTERMEDIARIOS_ID
+            );
 
-    const mensajesFila = [...estadosFilas.keys()];
+          if (canalIntermediarios?.isTextBased()) {
+            const aviso = await canalIntermediarios.messages.fetch(
+              fila.mensajeId
+            ).catch(() => null);
 
-    for (const mensajeId of mensajesFila) {
-      try {
-        const mensaje =
-          await canalFila.messages.fetch(mensajeId);
-
-        if (mensaje) {
-          await mensaje.delete().catch(() => {});
+            if (aviso) {
+              await aviso.delete().catch(() => {});
+            }
+          }
+        } catch (error) {
+          console.error("Error al borrar aviso:", error);
         }
 
-        estadosFilas.delete(mensajeId);
-        cerradas++;
-
-      } catch (error) {
-        estadosFilas.delete(mensajeId);
+        filasIntermediarios.delete(fila.canalId);
       }
+
+      // Eliminar mensajes de las filas
+      let cerradas = 0;
+
+      for (const mensajeId of [...estadosFilas.keys()]) {
+        try {
+          const mensaje =
+            await canalFila.messages.fetch(mensajeId);
+
+          if (mensaje) {
+            await mensaje.delete().catch(() => {});
+          }
+
+          estadosFilas.delete(mensajeId);
+          cerradas++;
+
+        } catch (error) {
+          estadosFilas.delete(mensajeId);
+        }
+      }
+
+      return message.reply({
+        content:
+          `✅ **Fila cerrada correctamente.**\n\n` +
+          `🗑️ Filas eliminadas: **${cerradas}**\n` +
+          `📄 HTML guardado en logs.`,
+      });
+
+    } catch (error) {
+      console.error("❌ Error al cerrar fila:", error);
+
+      return message.reply({
+        content:
+          "❌ Ocurrió un error al cerrar la fila y guardar el HTML.",
+      });
     }
-
-    return message.reply({
-      content:
-        `✅ **Fila cerrada correctamente.**\n\n` +
-        `🗑️ Filas eliminadas: **${cerradas}**\n` +
-        `📄 Transcripción HTML guardada en logs.`,
-    });
-
-  } catch (error) {
-    console.error("Error al cerrar la fila:", error);
-
-    return message.reply({
-      content:
-        "❌ Ocurrió un error al cerrar la fila y guardar el HTML.",
-    });
   }
 });
 
@@ -454,7 +494,7 @@ client.on("interactionCreate", async (interaction) => {
     fila.intermediarioId = interaction.user.id;
 
     const canalPartida =
-      interaction.guild.channels.cache.get(canalId);
+      await interaction.guild.channels.fetch(canalId).catch(() => null);
 
     if (!canalPartida) {
       filasIntermediarios.delete(canalId);
@@ -510,9 +550,7 @@ ${datosPago}
   // ===================== CERRAR PARTIDA =====================
 
   if (interaction.customId === "cerrar_partida") {
-    const tienePermiso = tienePermisoStaff(interaction.member);
-
-    if (!tienePermiso) {
+    if (!tienePermisoStaff(interaction.member)) {
       return interaction.reply({
         content: "❌ No tienes permiso para cerrar la mesa.",
         ephemeral: true,
@@ -536,30 +574,56 @@ ${datosPago}
         });
 
       const logChannel =
-        interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+        await interaction.guild.channels.fetch(LOG_CHANNEL_ID);
 
-      if (logChannel) {
+      if (logChannel?.isTextBased()) {
         await logChannel.send({
-          content: `📝 **Mesa Finalizada**
-Sala: \`${canalDestino.name}\`
-Cerrada por: <@${interaction.user.id}>`,
+          content:
+            `📝 **MESA FINALIZADA**\n` +
+            `Sala: \`${canalDestino.name}\`\n` +
+            `Cerrada por: <@${interaction.user.id}>`,
 
           files: [attachment],
         });
       }
-    } catch (e) {
-      console.error("Error al guardar transcripción:", e);
+
+    } catch (error) {
+      console.error("❌ Error al guardar transcripción:", error);
     }
 
-    filasIntermediarios.delete(canalDestino.id);
+    // Invalidar fila de intermediario
+    const fila = filasIntermediarios.get(canalDestino.id);
+
+    if (fila) {
+      try {
+        const canalIntermediarios =
+          await interaction.guild.channels.fetch(
+            CANAL_INTERMEDIARIOS_ID
+          );
+
+        if (canalIntermediarios?.isTextBased()) {
+          const aviso = await canalIntermediarios.messages.fetch(
+            fila.mensajeId
+          ).catch(() => null);
+
+          if (aviso) {
+            await aviso.delete().catch(() => {});
+          }
+        }
+      } catch (error) {
+        console.error("Error al borrar aviso:", error);
+      }
+
+      filasIntermediarios.delete(canalDestino.id);
+    }
 
     setTimeout(async () => {
       try {
         if (canalDestino.deletable) {
           await canalDestino.delete();
         }
-      } catch (err) {
-        console.error("Error al eliminar canal:", err);
+      } catch (error) {
+        console.error("Error al eliminar canal:", error);
       }
     }, 2000);
 
@@ -579,19 +643,19 @@ Cerrada por: <@${interaction.user.id}>`,
 
   const userId = interaction.user.id;
 
-  // ===================== SALIR FILA =====================
+  // ===================== SALIR DE FILA =====================
 
   if (interaction.customId === "salir_fila") {
     if (data.f1 === userId) data.f1 = null;
     if (data.f2 === userId) data.f2 = null;
     if (data.f3 === userId) data.f3 = null;
 
-    return await interaction.update({
+    return interaction.update({
       embeds: [crearEmbedFila(data)],
     });
   }
 
-  // ===================== MAPEO MESAS =====================
+  // ===================== MAPEO =====================
 
   const mapping = {
     btn_f1: "f1",
@@ -618,38 +682,42 @@ Cerrada por: <@${interaction.user.id}>`,
     }
   }
 
-  // ===================== SENTARSE / ENCONTRAR RIVAL =====================
+  // ===================== SENTARSE / RIVAL =====================
 
   if (!data[filaKey]) {
     data[filaKey] = userId;
 
-    await interaction.update({
+    return interaction.update({
       embeds: [crearEmbedFila(data)],
     });
-  } else {
-    if (data[filaKey] === userId) {
-      return interaction.reply({
-        content: "⚠️ Ya estás aquí.",
-        ephemeral: true,
-      });
-    }
+  }
 
-    const rivalId = data[filaKey];
-
-    data[filaKey] = null;
-
-    await interaction.update({
-      embeds: [crearEmbedFila(data)],
+  if (data[filaKey] === userId) {
+    return interaction.reply({
+      content: "⚠️ Ya estás aquí.",
+      ephemeral: true,
     });
+  }
 
+  const rivalId = data[filaKey];
+
+  data[filaKey] = null;
+
+  await interaction.update({
+    embeds: [crearEmbedFila(data)],
+  });
+
+  try {
     await crearCanalPrivado(interaction, [
       rivalId,
       userId,
     ]);
+  } catch (error) {
+    console.error("❌ Error al crear partida:", error);
   }
 });
 
-// ===================== CREAR CANAL PRIVADO =====================
+// ===================== CANAL PRIVADO =====================
 
 async function crearCanalPrivado(interaction, jugadores) {
   const guild = interaction.guild;
@@ -721,9 +789,9 @@ async function crearCanalPrivado(interaction, jugadores) {
     );
 
   await canal.send({
-    content: `${jugadores
-      .map((id) => `<@${id}>`)
-      .join(" ")} | <@&${STAFF_ROLE_ID}> <@&${EXTRA_MOD_ROLE_ID}>`,
+    content:
+      `${jugadores.map((id) => `<@${id}>`).join(" ")} | ` +
+      `<@&${STAFF_ROLE_ID}> <@&${EXTRA_MOD_ROLE_ID}>`,
 
     embeds: [embedMatch],
 
