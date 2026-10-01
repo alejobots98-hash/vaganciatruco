@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const {
@@ -76,7 +75,8 @@ const METODOS_INTERMEDIARIOS = {
     banco: "Mercado Pago",
     nombre: "lautaro jose nehuen figueroa",
     alias: "vg.lauty7",
-    link: "https://onetouch.astropay.com/payment?external_reference_id=n0iFPqlqR711ohBNW4hEEGbzRkxsTbwo",
+    link:
+      "https://onetouch.astropay.com/payment?external_reference_id=n0iFPqlqR711ohBNW4hEEGbzRkxsTbwo",
   },
 
   "1049772413161836585": {
@@ -113,6 +113,16 @@ const METODOS_INTERMEDIARIOS = {
     banco: "Uala",
     nombre: "Antonella Sheila Porpora",
     alias: "vg.pepou",
+  },
+
+  // =================================================
+  // NUEVO INTERMEDIARIO
+  // =================================================
+
+  "587775871902023701": {
+    banco: "Uala",
+    nombre: "Marcos Agustín Zalazar",
+    alias: "zalazaruala",
   },
 };
 
@@ -298,31 +308,33 @@ async function avisarIntermediarios(
       );
     }
 
-    const mensaje = await canalIntermediarios.send({
-      content:
-        `🔔 **NUEVA PARTIDA DISPONIBLE**\n\n` +
-        `<@&${INTERMEDIARIO_ROLE_ID}>`,
+    const mensaje =
+      await canalIntermediarios.send({
+        content:
+          `🔔 **NUEVA PARTIDA DISPONIBLE**
 
-      embeds: [
-        crearAvisoIntermediario(jugadores),
-      ],
+<@&${INTERMEDIARIO_ROLE_ID}>`,
 
-      components: [
-        new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(
-              `tomar_fila_${canal.id}`
-            )
-            .setLabel("TOMAR FILA")
-            .setEmoji("🤝")
-            .setStyle(ButtonStyle.Success)
-        ),
-      ],
+        embeds: [
+          crearAvisoIntermediario(jugadores),
+        ],
 
-      allowedMentions: {
-        roles: [INTERMEDIARIO_ROLE_ID],
-      },
-    });
+        components: [
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId(
+                `tomar_fila_${canal.id}`
+              )
+              .setLabel("TOMAR FILA")
+              .setEmoji("🤝")
+              .setStyle(ButtonStyle.Success)
+          ),
+        ],
+
+        allowedMentions: {
+          roles: [INTERMEDIARIO_ROLE_ID],
+        },
+      });
 
     filasIntermediarios.set(canal.id, {
       jugadores,
@@ -379,9 +391,9 @@ async function borrarAvisoIntermediario(
 
     if (canalIntermediarios?.isTextBased()) {
       const aviso =
-        await canalIntermediarios.messages.fetch(
-          fila.mensajeId
-        ).catch(() => null);
+        await canalIntermediarios.messages
+          .fetch(fila.mensajeId)
+          .catch(() => null);
 
       if (aviso) {
         await aviso.delete().catch(() => {});
@@ -462,7 +474,7 @@ client.on("messageCreate", async (message) => {
   // ===================================================
 
   if (comando === CLOSE_COMMAND) {
-    // No permitir cerrar desde la fila general
+
     if (
       message.channel.id === CANAL_FILA_ID ||
       message.channel.id === CANAL_INTERMEDIARIOS_ID
@@ -470,7 +482,6 @@ client.on("messageCreate", async (message) => {
       return;
     }
 
-    // Solo canales de texto
     if (
       message.channel.type !==
       ChannelType.GuildText
@@ -520,9 +531,10 @@ client.on("messageCreate", async (message) => {
 
       await logChannel.send({
         content:
-          `📝 **MESA CERRADA CON !close**\n\n` +
-          `📌 Canal: \`${canalPartida.name}\`\n` +
-          `👤 Cerrada por: <@${message.author.id}>`,
+          `📝 **MESA CERRADA CON !close**
+
+📌 Canal: \`${canalPartida.name}\`
+👤 Cerrada por: <@${message.author.id}>`,
 
         files: [
           attachment,
@@ -570,98 +582,104 @@ client.on("messageCreate", async (message) => {
 // INTERACCIONES
 // =====================================================
 
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isButton()) return;
+client.on(
+  "interactionCreate",
+  async (interaction) => {
 
-  // ===================================================
-  // TOMAR FILA
-  // ===================================================
+    if (!interaction.isButton()) return;
 
-  if (
-    interaction.customId.startsWith(
-      "tomar_fila_"
-    )
-  ) {
-    const canalId =
-      interaction.customId.replace(
-        "tomar_fila_",
-        ""
-      );
+    // =================================================
+    // TOMAR FILA
+    // =================================================
 
-    const fila =
-      filasIntermediarios.get(canalId);
+    if (
+      interaction.customId.startsWith(
+        "tomar_fila_"
+      )
+    ) {
 
-    if (!fila) {
-      return interaction.reply({
-        content:
-          "❌ Esta fila ya no está disponible.",
-        ephemeral: true,
-      });
-    }
+      const canalId =
+        interaction.customId.replace(
+          "tomar_fila_",
+          ""
+        );
 
-    const intermediario =
-      METODOS_INTERMEDIARIOS[
-        interaction.user.id
-      ];
+      const fila =
+        filasIntermediarios.get(canalId);
 
-    if (!intermediario) {
-      return interaction.reply({
-        content:
-          "❌ No estás autorizado como intermediario.",
-        ephemeral: true,
-      });
-    }
+      if (!fila) {
+        return interaction.reply({
+          content:
+            "❌ Esta fila ya no está disponible.",
+          ephemeral: true,
+        });
+      }
 
-    if (fila.intermediarioId) {
-      return interaction.reply({
-        content:
-          "⚠️ Esta fila ya fue tomada por otro intermediario.",
-        ephemeral: true,
-      });
-    }
+      const intermediario =
+        METODOS_INTERMEDIARIOS[
+          interaction.user.id
+        ];
 
-    fila.intermediarioId =
-      interaction.user.id;
+      if (!intermediario) {
+        return interaction.reply({
+          content:
+            "❌ No estás autorizado como intermediario.",
+          ephemeral: true,
+        });
+      }
 
-    const canalPartida =
-      await interaction.guild.channels.fetch(
-        canalId
-      ).catch(() => null);
+      if (fila.intermediarioId) {
+        return interaction.reply({
+          content:
+            "⚠️ Esta fila ya fue tomada por otro intermediario.",
+          ephemeral: true,
+        });
+      }
 
-    if (!canalPartida) {
-      filasIntermediarios.delete(canalId);
+      fila.intermediarioId =
+        interaction.user.id;
 
-      return interaction.reply({
-        content:
-          "❌ El canal de la partida no existe.",
-        ephemeral: true,
-      });
-    }
+      const canalPartida =
+        await interaction.guild.channels.fetch(
+          canalId
+        ).catch(() => null);
 
-    await interaction.update({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(0x808080)
-          .setTitle("🤝 FILA TOMADA")
-          .setDescription(
-            `✅ **Intermediario asignado:** <@${interaction.user.id}>
+      if (!canalPartida) {
+        filasIntermediarios.delete(canalId);
+
+        return interaction.reply({
+          content:
+            "❌ El canal de la partida no existe.",
+          ephemeral: true,
+        });
+      }
+
+      await interaction.update({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0x808080)
+            .setTitle("🤝 FILA TOMADA")
+            .setDescription(
+              `✅ **Intermediario asignado:** <@${interaction.user.id}>
 
 🃏 La partida ya tiene un intermediario.`
-          ),
-      ],
-      components: [],
-    });
+            ),
+        ],
+        components: [],
+      });
 
-    const datosPago =
-      crearDatosPago(intermediario);
+      const datosPago =
+        crearDatosPago(intermediario);
 
-    await canalPartida.send({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(0x00AE86)
-          .setTitle("🤝 INTERMEDIARIO ASIGNADO")
-          .setDescription(
-            `🎴 **El intermediario de esta partida es:**
+      await canalPartida.send({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0x00AE86)
+            .setTitle(
+              "🤝 INTERMEDIARIO ASIGNADO"
+            )
+            .setDescription(
+              `🎴 **El intermediario de esta partida es:**
 
 <@${interaction.user.id}>
 
@@ -674,252 +692,265 @@ ${datosPago}
 ━━━━━━━━━━━━━━━━━━
 
 ✅ Ya pueden coordinar la partida con el intermediario.`
-          ),
-      ],
-    });
-
-    return;
-  }
-
-  // ===================================================
-  // LEVANTAR MESA
-  // ===================================================
-
-  if (
-    interaction.customId === "cerrar_partida"
-  ) {
-    if (
-      !tienePermisoStaff(
-        interaction.member
-      )
-    ) {
-      return interaction.reply({
-        content:
-          "❌ No tenés permiso para cerrar la mesa.",
-        ephemeral: true,
-      });
-    }
-
-    const canalDestino =
-      interaction.channel;
-
-    await interaction.reply({
-      content:
-        "⏳ Guardando la transcripción...",
-      ephemeral: true,
-    });
-
-    try {
-      const attachment =
-        await discordTranscripts.createTranscript(
-          canalDestino,
-          {
-            limit: -1,
-            fileName:
-              `mesa-${canalDestino.id}-${Date.now()}.html`,
-            saveImages: true,
-            poweredBy: false,
-          }
-        );
-
-      const logChannel =
-        await interaction.guild.channels.fetch(
-          LOG_CHANNEL_ID
-        );
-
-      if (
-        !logChannel ||
-        !logChannel.isTextBased()
-      ) {
-        throw new Error(
-          "Canal de logs no encontrado."
-        );
-      }
-
-      await logChannel.send({
-        content:
-          `📝 **MESA FINALIZADA**\n\n` +
-          `📌 Sala: \`${canalDestino.name}\`\n` +
-          `👤 Cerrada por: <@${interaction.user.id}>`,
-
-        files: [
-          attachment,
+            ),
         ],
       });
 
-      await borrarAvisoIntermediario(
-        interaction.guild,
-        canalDestino.id
-      );
+      return;
+    }
 
-      await canalDestino.send(
-        "✅ Registro guardado. La mesa se cerrará en 3 segundos."
-      );
+    // =================================================
+    // LEVANTAR MESA
+    // =================================================
 
-      setTimeout(async () => {
-        try {
-          if (canalDestino.deletable) {
-            await canalDestino.delete();
-          }
-        } catch (error) {
-          console.error(
-            "❌ Error al eliminar mesa:",
-            error
+    if (
+      interaction.customId ===
+      "cerrar_partida"
+    ) {
+
+      if (
+        !tienePermisoStaff(
+          interaction.member
+        )
+      ) {
+        return interaction.reply({
+          content:
+            "❌ No tenés permiso para cerrar la mesa.",
+          ephemeral: true,
+        });
+      }
+
+      const canalDestino =
+        interaction.channel;
+
+      await interaction.reply({
+        content:
+          "⏳ Guardando la transcripción...",
+        ephemeral: true,
+      });
+
+      try {
+
+        const attachment =
+          await discordTranscripts.createTranscript(
+            canalDestino,
+            {
+              limit: -1,
+              fileName:
+                `mesa-${canalDestino.id}-${Date.now()}.html`,
+              saveImages: true,
+              poweredBy: false,
+            }
+          );
+
+        const logChannel =
+          await interaction.guild.channels.fetch(
+            LOG_CHANNEL_ID
+          );
+
+        if (
+          !logChannel ||
+          !logChannel.isTextBased()
+        ) {
+          throw new Error(
+            "Canal de logs no encontrado."
           );
         }
-      }, 3000);
 
-    } catch (error) {
-      console.error(
-        "❌ Error al guardar transcripción:",
-        error
+        await logChannel.send({
+          content:
+            `📝 **MESA FINALIZADA**
+
+📌 Sala: \`${canalDestino.name}\`
+👤 Cerrada por: <@${interaction.user.id}>`,
+
+          files: [
+            attachment,
+          ],
+        });
+
+        await borrarAvisoIntermediario(
+          interaction.guild,
+          canalDestino.id
+        );
+
+        await canalDestino.send(
+          "✅ Registro guardado. La mesa se cerrará en 3 segundos."
+        );
+
+        setTimeout(async () => {
+          try {
+            if (canalDestino.deletable) {
+              await canalDestino.delete();
+            }
+          } catch (error) {
+            console.error(
+              "❌ Error al eliminar mesa:",
+              error
+            );
+          }
+        }, 3000);
+
+      } catch (error) {
+
+        console.error(
+          "❌ Error al guardar transcripción:",
+          error
+        );
+
+        await interaction.followUp({
+          content:
+            "❌ No se pudo guardar la transcripción.",
+          ephemeral: true,
+        }).catch(() => {});
+      }
+
+      return;
+    }
+
+    // =================================================
+    // BOTONES DE FILA
+    // =================================================
+
+    const data =
+      estadosFilas.get(
+        interaction.message.id
       );
 
-      await interaction.followUp({
-        content:
-          "❌ No se pudo guardar la transcripción.",
-        ephemeral: true,
-      }).catch(() => {});
-    }
-
-    return;
-  }
-
-  // ===================================================
-  // BOTONES DE FILA
-  // ===================================================
-
-  const data =
-    estadosFilas.get(
-      interaction.message.id
-    );
-
-  if (!data) {
-    return interaction.reply({
-      content:
-        "❌ Fila no encontrada.",
-      ephemeral: true,
-    });
-  }
-
-  const userId =
-    interaction.user.id;
-
-  // ===================================================
-  // SALIR DE FILA
-  // ===================================================
-
-  if (
-    interaction.customId === "salir_fila"
-  ) {
-    if (data.f1 === userId) {
-      data.f1 = null;
-    }
-
-    if (data.f2 === userId) {
-      data.f2 = null;
-    }
-
-    if (data.f3 === userId) {
-      data.f3 = null;
-    }
-
-    return interaction.update({
-      embeds: [
-        crearEmbedFila(data),
-      ],
-    });
-  }
-
-  // ===================================================
-  // IDENTIFICAR MESA
-  // ===================================================
-
-  const mapping = {
-    btn_f1: "f1",
-    btn_f2: "f2",
-    btn_f3: "f3",
-  };
-
-  const filaKey =
-    mapping[interaction.customId];
-
-  if (!filaKey) return;
-
-  // ===================================================
-  // EVITAR DOS MESAS
-  // ===================================================
-
-  if (
-    data.f1 === userId ||
-    data.f2 === userId ||
-    data.f3 === userId
-  ) {
-    if (data[filaKey] !== userId) {
+    if (!data) {
       return interaction.reply({
         content:
-          "⚠️ Ya estás sentado en una mesa.",
+          "❌ Fila no encontrada.",
         ephemeral: true,
       });
     }
-  }
 
-  // ===================================================
-  // SENTARSE EN MESA VACÍA
-  // ===================================================
+    const userId =
+      interaction.user.id;
 
-  if (!data[filaKey]) {
-    data[filaKey] = userId;
+    // =================================================
+    // SALIR DE FILA
+    // =================================================
 
-    return interaction.update({
+    if (
+      interaction.customId ===
+      "salir_fila"
+    ) {
+
+      if (data.f1 === userId) {
+        data.f1 = null;
+      }
+
+      if (data.f2 === userId) {
+        data.f2 = null;
+      }
+
+      if (data.f3 === userId) {
+        data.f3 = null;
+      }
+
+      return interaction.update({
+        embeds: [
+          crearEmbedFila(data),
+        ],
+      });
+    }
+
+    // =================================================
+    // IDENTIFICAR MESA
+    // =================================================
+
+    const mapping = {
+      btn_f1: "f1",
+      btn_f2: "f2",
+      btn_f3: "f3",
+    };
+
+    const filaKey =
+      mapping[interaction.customId];
+
+    if (!filaKey) return;
+
+    // =================================================
+    // EVITAR DOS MESAS
+    // =================================================
+
+    if (
+      data.f1 === userId ||
+      data.f2 === userId ||
+      data.f3 === userId
+    ) {
+
+      if (data[filaKey] !== userId) {
+        return interaction.reply({
+          content:
+            "⚠️ Ya estás sentado en una mesa.",
+          ephemeral: true,
+        });
+      }
+    }
+
+    // =================================================
+    // SENTARSE EN MESA VACÍA
+    // =================================================
+
+    if (!data[filaKey]) {
+
+      data[filaKey] = userId;
+
+      return interaction.update({
+        embeds: [
+          crearEmbedFila(data),
+        ],
+      });
+    }
+
+    // =================================================
+    // YA ESTÁ SENTADO
+    // =================================================
+
+    if (data[filaKey] === userId) {
+      return interaction.reply({
+        content:
+          "⚠️ Ya estás sentado en esta mesa.",
+        ephemeral: true,
+      });
+    }
+
+    // =================================================
+    // CREAR PARTIDA
+    // =================================================
+
+    const rivalId =
+      data[filaKey];
+
+    data[filaKey] = null;
+
+    await interaction.update({
       embeds: [
         crearEmbedFila(data),
       ],
     });
+
+    try {
+
+      await crearCanalPrivado(
+        interaction,
+        [
+          rivalId,
+          userId,
+        ]
+      );
+
+    } catch (error) {
+
+      console.error(
+        "❌ Error al crear partida:",
+        error
+      );
+    }
   }
-
-  // ===================================================
-  // YA ESTÁ SENTADO
-  // ===================================================
-
-  if (data[filaKey] === userId) {
-    return interaction.reply({
-      content:
-        "⚠️ Ya estás sentado en esta mesa.",
-      ephemeral: true,
-    });
-  }
-
-  // ===================================================
-  // CREAR PARTIDA
-  // ===================================================
-
-  const rivalId =
-    data[filaKey];
-
-  data[filaKey] = null;
-
-  await interaction.update({
-    embeds: [
-      crearEmbedFila(data),
-    ],
-  });
-
-  try {
-    await crearCanalPrivado(
-      interaction,
-      [
-        rivalId,
-        userId,
-      ]
-    );
-  } catch (error) {
-    console.error(
-      "❌ Error al crear partida:",
-      error
-    );
-  }
-});
+);
 
 // =====================================================
 // CREAR CANAL PRIVADO
@@ -929,6 +960,7 @@ async function crearCanalPrivado(
   interaction,
   jugadores
 ) {
+
   const guild =
     interaction.guild;
 
@@ -938,6 +970,7 @@ async function crearCanalPrivado(
   const nombres =
     jugadores
       .map((id) => {
+
         const member =
           guild.members.cache.get(id);
 
@@ -945,6 +978,7 @@ async function crearCanalPrivado(
           member?.user.username ||
           "jugador"
         );
+
       })
       .join("-vs-")
       .toLowerCase()
@@ -953,13 +987,20 @@ async function crearCanalPrivado(
 
   const canal =
     await guild.channels.create({
-      name: `🃏┃${nombres}`,
-      type: ChannelType.GuildText,
+
+      name:
+        `🃏┃${nombres}`,
+
+      type:
+        ChannelType.GuildText,
+
       parent,
 
       permissionOverwrites: [
+
         {
           id: guild.id,
+
           deny: [
             PermissionsBitField.Flags.ViewChannel,
           ],
@@ -967,6 +1008,7 @@ async function crearCanalPrivado(
 
         {
           id: STAFF_ROLE_ID,
+
           allow: [
             PermissionsBitField.Flags.ViewChannel,
             PermissionsBitField.Flags.SendMessages,
@@ -976,6 +1018,7 @@ async function crearCanalPrivado(
 
         {
           id: EXTRA_MOD_ROLE_ID,
+
           allow: [
             PermissionsBitField.Flags.ViewChannel,
             PermissionsBitField.Flags.SendMessages,
@@ -984,6 +1027,7 @@ async function crearCanalPrivado(
         },
 
         ...jugadores.map((id) => ({
+
           id,
 
           allow: [
@@ -991,7 +1035,9 @@ async function crearCanalPrivado(
             PermissionsBitField.Flags.SendMessages,
             PermissionsBitField.Flags.ReadMessageHistory,
           ],
+
         })),
+
       ],
     });
 
@@ -1018,6 +1064,7 @@ async function crearCanalPrivado(
       );
 
   await canal.send({
+
     content:
       `${jugadores
         .map((id) => `<@${id}>`)
@@ -1030,6 +1077,7 @@ async function crearCanalPrivado(
 
     components: [
       new ActionRowBuilder().addComponents(
+
         new ButtonBuilder()
           .setCustomId(
             "cerrar_partida"
@@ -1041,6 +1089,7 @@ async function crearCanalPrivado(
           .setStyle(
             ButtonStyle.Danger
           )
+
       ),
     ],
   });
@@ -1071,9 +1120,17 @@ async function crearCanalPrivado(
 // =====================================================
 
 client.once("ready", () => {
+
   console.log(
     `🃏 Bot conectado correctamente: ${client.user.tag}`
   );
+
 });
 
-client.login(process.env.TOKEN);
+// =====================================================
+// LOGIN
+// =====================================================
+
+client.login(
+  process.env.TOKEN
+);
