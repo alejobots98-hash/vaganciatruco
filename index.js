@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const {
@@ -461,7 +460,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ===================================================
-  // !CLOSE EN CANAL PRIVADO
+  // !CLOSE EN CANAL PRIVADO (SOLO MESAS DE TRUCO)
   // ===================================================
 
   if (comando === CLOSE_COMMAND) {
@@ -472,10 +471,14 @@ client.on("messageCreate", async (message) => {
       return;
     }
 
+    // Solo se permite ejecutar !close si el canal es de texto y empieza con el emoji 🃏
     if (
-      message.channel.type !== ChannelType.GuildText
+      message.channel.type !== ChannelType.GuildText ||
+      !message.channel.name.startsWith("🃏")
     ) {
-      return;
+      return message.reply(
+        "❌ Este comando solo se puede usar dentro de una mesa de Truco activa."
+      );
     }
 
     if (!tienePermisoStaff(message.member)) {
